@@ -67,13 +67,13 @@ func Compute(config *state.Config, registry *prometheus.Registry, logger log.Log
 		}
 
 		level.Debug(logger).Log("msg", "Updating metrics registry")
-		ingestMetrics(registry, rows)
+		ingestMetrics(registry, rows, logger)
 	}
 
 	return nil
 }
 
-func ingestMetrics(registry *prometheus.Registry, rows *sql.Rows) error {
+func ingestMetrics(registry *prometheus.Registry, rows *sql.Rows, logger log.Logger) error {
 	columns, err := rows.Columns()
 	if err != nil {
 		return err
@@ -129,10 +129,13 @@ func ingestMetrics(registry *prometheus.Registry, rows *sql.Rows) error {
 
 	for rows.Next() {
 		if err := rows.Scan(rowValuePtrs...); err != nil {
+			level.Debug(logger).Log("msg", "check error", "err", err)
 			if err == sql.ErrNoRows {
 				break
 			} else {
-				return err
+				// Don't fail if one row has a null value
+				// return err
+				continue
 			}
 		} else {
 			labelValues := make([]string, len(labelValuePtrs))
@@ -140,6 +143,9 @@ func ingestMetrics(registry *prometheus.Registry, rows *sql.Rows) error {
 			for i := range labelValuePtrs {
 				labelValues[i] = *labelValuePtrs[i]
 			}
+
+			level.Debug(logger).Log("msg", "label values", "len", len(gauges))
+
 
 			for i, gauge := range gauges {
 				gauge.WithLabelValues(labelValues...).Set(*metricValuePtrs[i])
