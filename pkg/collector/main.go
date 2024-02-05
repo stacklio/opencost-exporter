@@ -6,7 +6,6 @@ import (
 	"github.com/st8ed/aws-cost-exporter/pkg/state"
 
 	"github.com/go-kit/log"
-	"github.com/go-kit/log/level"
 
 	"time"
 
@@ -46,18 +45,7 @@ func UpdateReport(
 		lastModified = time.Time{}
 	}
 
-	level.Debug(logger).Log("msg", "Attempt to download new report manifest", "period", period, "lastModified", lastModified)
-	manifest, err := fetcher.GetReportManifest(config, client, period, &lastModified)
-	if err != nil {
-		return false, err
-	}
-
-	if manifest == nil {
-		level.Debug(logger).Log("msg", "Report manifest didn't change", "period", period, "lastModified", lastModified)
-		return false, nil
-	}
-
-	if err := fetcher.FetchReport(config, client, manifest, logger); err != nil {
+	if err := fetcher.FetchReport(config, client, period, logger); err != nil {
 		return false, err
 	}
 

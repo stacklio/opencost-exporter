@@ -1,10 +1,10 @@
 package fetcher
 
 import (
+	"path"
+
 	"github.com/st8ed/aws-cost-exporter/pkg/state"
 
-	"bufio"
-	"compress/gzip"
 	"context"
 	"encoding/json"
 	"errors"
@@ -16,7 +16,6 @@ import (
 	"github.com/go-kit/log"
 	"github.com/go-kit/log/level"
 
-	"io"
 	"os"
 	"time"
 
@@ -46,8 +45,8 @@ func (a SortRecentFirst) Less(i, j int) bool { return a[i] < a[j] }
 func GetBillingPeriods(config *state.Config, client *s3.Client) ([]state.BillingPeriod, error) {
 	params := &s3.ListObjectsV2Input{
 		Bucket:    aws.String(config.BucketName),
-		Prefix:    aws.String("/" + config.ReportName + "/"),
-		Delimiter: aws.String("/"),
+		Prefix:    aws.String(""),
+		Delimiter: aws.String(""),
 	}
 
 	periods := make([]state.BillingPeriod, 0)
@@ -59,16 +58,18 @@ func GetBillingPeriods(config *state.Config, client *s3.Client) ([]state.Billing
 			return nil, err
 		}
 
-		for _, obj := range page.CommonPrefixes {
-			period, err := state.ParseBillingPeriod(
-				strings.TrimSuffix(strings.TrimPrefix(*obj.Prefix, *params.Prefix), "/"),
-			)
+		for _, obj := range page.Contents {
+			if path.Ext(*obj.Key) == ".csv" {
+				period, err := state.ParseBillingPeriod(
+					strings.TrimSuffix(*obj.Key, ".csv"),
+				)
 
-			if err != nil {
-				return nil, err
+				if err != nil {
+					return nil, err
+				}
+
+				periods = append(periods, *period)
 			}
-
-			periods = append(periods, *period)
 		}
 	}
 
@@ -130,98 +131,49 @@ func GetReportManifest(config *state.Config, client *s3.Client, period *state.Bi
 	return manifest, nil
 }
 
-func FetchReport(config *state.Config, client *s3.Client, manifest *ReportManifest, logger log.Logger) error {
-	periodStart, err := time.Parse("20060102T150405Z", manifest.BillingPeriod.Start)
-	if err != nil {
-		return err
-	}
+func FetchReport(config *state.Config, client *s3.Client, period *state.BillingPeriod, logger log.Logger) error {
+	ReportFile := fmt.Sprintf("%s.csv", string(*period))
 
-	reportFile := filepath.Join(
+	localReportFile := filepath.Join(
 		config.RepositoryPath, "data",
-		periodStart.Format("20060102")+"-"+manifest.AssemblyId+".csv",
+		ReportFile,
 	)
 
-	if _, err := os.Stat(reportFile); !errors.Is(err, os.ErrNotExist) {
-		level.Warn(logger).Log("msg", "Report file already exists, skipping download", "file", reportFile)
+	if _, err := os.Stat(localReportFile); !errors.Is(err, os.ErrNotExist) {
+		level.Warn(logger).Log("msg", "Report file already exists, skipping download", "file", localReportFile)
 		return nil
 	}
 
-	level.Info(logger).Log("msg", "Fetching report", "file", reportFile, "parts", len(manifest.ReportKeys))
+	level.Info(logger).Log("msg", "Fetching report", "file", ReportFile)
 
-	f, err := os.Create(reportFile + ".tmp")
-	if err != nil {
-		return err
-	}
-
-	for reportPart, reportKey := range manifest.ReportKeys {
-		level.Info(logger).Log("msg", "Fetching report part", "file", reportFile, "part", reportPart)
-
-		params := &s3.GetObjectInput{
-			Bucket: aws.String(manifest.Bucket),
-			Key:    aws.String(reportKey),
-		}
-
-		piper, pipew := io.Pipe()
-
-		writeErr := make(chan error)
-
-		go func() {
-			defer piper.Close()
-
-			zr, err := gzip.NewReader(piper)
-			if err != nil {
-				writeErr <- err
-				return
-			}
-			defer zr.Close()
-
-			if reportPart > 0 {
-				// Keep table header (first csv line)
-				// only for first report partition
-				headerReader := bufio.NewReaderSize(zr, 1)
-
-				if _, err := headerReader.ReadString('\n'); err != nil {
-					writeErr <- err
-					return
-				}
-			}
-
-			if _, err := io.Copy(f, zr); err != nil {
-				writeErr <- err
-				return
-			}
-
-			writeErr <- nil
-		}()
-
-		obj, err := client.GetObject(context.TODO(), params)
-		if err != nil {
-			return err
-		}
-		defer obj.Body.Close()
-
-		level.Debug(logger).Log("ContentLength", obj.ContentLength)
-
-		if written, err := io.Copy(pipew, obj.Body); err != nil {
-			return err
-		} else {
-			level.Debug(logger).Log("Written", written)
-		}
-
-		pipew.Close()
-
-		if err := <-writeErr; err != nil {
-			return err
-		}
-	}
-
-	if err := f.Close(); err != nil {
-		return err
-	}
-
-	if err := os.Rename(reportFile+".tmp", reportFile); err != nil {
-		return err
-	}
+	downloadFromS3(client, config.BucketName, ReportFile, localReportFile)
 
 	return nil
+}
+
+func downloadFromS3(client *s3.Client, bucketName, key string, save_path string) ([]byte, error) {
+
+	resp, err := client.GetObject(context.TODO(), &s3.GetObjectInput{
+		Bucket: aws.String(bucketName),
+		Key:    aws.String(key),
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to download %s to S3: %v", key, err)
+	}
+	defer resp.Body.Close()
+
+	buf := make([]byte, 1024)
+	var data []byte
+	for {
+		n, err := resp.Body.Read(buf)
+		if n > 0 {
+			data = append(data, buf[:n]...)
+		}
+		if err != nil {
+			break
+		}
+	}
+	os.WriteFile(save_path, data, os.ModePerm)
+	return data, nil
 }

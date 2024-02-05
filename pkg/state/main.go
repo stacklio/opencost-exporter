@@ -2,7 +2,6 @@ package state
 
 import (
 	"encoding/json"
-	"io/ioutil"
 	"path/filepath"
 
 	"os"
@@ -35,7 +34,7 @@ func Init() *State {
 func Load(config *Config) (*State, error) {
 	state := Init()
 
-	if jsonString, err := ioutil.ReadFile(config.StateFilePath); err != nil {
+	if jsonString, err := os.ReadFile(config.StateFilePath); err != nil {
 		if !os.IsNotExist(err) {
 			return nil, err
 		}
@@ -64,7 +63,7 @@ func (state *State) Save(config *Config) error {
 	if jsonString, err := json.MarshalIndent(state, "", "    "); err != nil {
 		return err
 	} else {
-		if err := ioutil.WriteFile(config.StateFilePath, jsonString, os.ModePerm); err != nil {
+		if err := os.WriteFile(config.StateFilePath, jsonString, os.ModePerm); err != nil {
 			return err
 		}
 	}

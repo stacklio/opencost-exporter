@@ -16,12 +16,12 @@ func ParseBillingPeriod(period string) (*BillingPeriod, error) {
 
 func (period *BillingPeriod) IsPastDue() bool {
 	parts := strings.Split(string(*period), "-")
-	if len(parts) != 2 || len(parts[1]) != 8 {
+	if len(parts) != 2 || len(parts[1]) != 14 {
 		panic(fmt.Sprintf("Malformed period format: %s", *period))
 	}
 
 	// TODO: Make sure reports timezone is actually UTC
-	t, err := time.ParseInLocation("20060102", parts[1], time.UTC)
+	t, err := time.ParseInLocation("20060102150405", parts[1], time.UTC)
 	if err != nil {
 		panic(err)
 	}
