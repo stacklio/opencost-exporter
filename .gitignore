@@ -1,5 +1,5 @@
 /.vscode
-/aws-cost-exporter
+/opencost-exporter
 /result
 .DS_Store
 .env

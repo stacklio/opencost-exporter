@@ -1,14 +1,14 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "aws-cost-exporter.fullname" . }}
+  name: {{ include "opencost-exporter.fullname" . }}
   labels:
-    {{- include "aws-cost-exporter.labels" . | nindent 4 }}
+    {{- include "opencost-exporter.labels" . | nindent 4 }}
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
     matchLabels:
-      {{- include "aws-cost-exporter.selectorLabels" . | nindent 6 }}
+      {{- include "opencost-exporter.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       {{- with .Values.podAnnotations }}
@@ -16,13 +16,13 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       labels:
-        {{- include "aws-cost-exporter.selectorLabels" . | nindent 8 }}
+        {{- include "opencost-exporter.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      serviceAccountName: {{ include "aws-cost-exporter.serviceAccountName" . }}
+      serviceAccountName: {{ include "opencost-exporter.serviceAccountName" . }}
       securityContext:
         {{- toYaml .Values.podSecurityContext | nindent 8 }}
       containers:
@@ -59,7 +59,7 @@ spec:
             - name: aws-secrets
               mountPath: /etc/aws
             - name: data
-              mountPath: /var/lib/aws-cost-exporter
+              mountPath: /var/lib/opencost-exporter
       {{- with .Values.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
@@ -75,7 +75,7 @@ spec:
       volumes:
         - name: aws-secrets
           secret:
-            secretName: {{ include "aws-cost-exporter.fullname" . }}-aws
+            secretName: {{ include "opencost-exporter.fullname" . }}-aws
             defaultMode: 111
         - name: data
           emptyDir: {}

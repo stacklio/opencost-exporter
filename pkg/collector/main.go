@@ -2,8 +2,8 @@ package collector
 
 import (
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/st8ed/aws-cost-exporter/pkg/fetcher"
-	"github.com/st8ed/aws-cost-exporter/pkg/state"
+	"github.com/st8ed/opencost-exporter/pkg/fetcher"
+	"github.com/st8ed/opencost-exporter/pkg/state"
 
 	"github.com/go-kit/log"
 
@@ -41,8 +41,9 @@ func UpdateReport(
 	logger log.Logger,
 ) (updated bool, err error) {
 	lastModified, ok := state.ReportLastModified[string(*period)]
-	if !ok {
-		lastModified = time.Time{}
+
+	if !ok || lastModified.IsZero() {
+		lastModified = time.Now()
 	}
 
 	if err := fetcher.FetchReport(config, client, period, logger); err != nil {

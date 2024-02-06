@@ -10,7 +10,7 @@ import (
 	"sort"
 
 	"github.com/prometheus/client_golang/prometheus"
-	"github.com/st8ed/aws-cost-exporter/pkg/state"
+	"github.com/st8ed/opencost-exporter/pkg/state"
 
 	"strings"
 
@@ -27,7 +27,7 @@ func Compute(config *state.Config, registry *prometheus.Registry, logger log.Log
 		return err
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5 * time.Minute)
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
 	defer cancel()
 
 	db, err := sql.Open("csvq", config.RepositoryPath)
@@ -113,7 +113,7 @@ func ingestMetrics(registry *prometheus.Registry, rows *sql.Rows, logger log.Log
 	for i, name := range metricNames {
 		gauges[i] = prometheus.NewGaugeVec(
 			prometheus.GaugeOpts{
-				Name: fmt.Sprintf("aws_report_%s", name),
+				Name: fmt.Sprintf("opencost_report_%s", name),
 			},
 			labelNames,
 		)
@@ -145,7 +145,6 @@ func ingestMetrics(registry *prometheus.Registry, rows *sql.Rows, logger log.Log
 			}
 
 			level.Debug(logger).Log("msg", "label values", "len", len(gauges))
-
 
 			for i, gauge := range gauges {
 				gauge.WithLabelValues(labelValues...).Set(*metricValuePtrs[i])

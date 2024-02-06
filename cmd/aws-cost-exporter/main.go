@@ -1,10 +1,10 @@
 package main
 
 import (
-	"github.com/st8ed/aws-cost-exporter/pkg/collector"
-	"github.com/st8ed/aws-cost-exporter/pkg/fetcher"
-	"github.com/st8ed/aws-cost-exporter/pkg/processor"
-	"github.com/st8ed/aws-cost-exporter/pkg/state"
+	"github.com/st8ed/opencost-exporter/pkg/collector"
+	"github.com/st8ed/opencost-exporter/pkg/fetcher"
+	"github.com/st8ed/opencost-exporter/pkg/processor"
+	"github.com/st8ed/opencost-exporter/pkg/state"
 
 	"context"
 	"os/user"
@@ -108,17 +108,17 @@ func main() {
 		repositoryPath = kingpin.Flag(
 			"repository",
 			"Path to store cached AWS billing reports",
-		).Default("/var/lib/aws-cost-exporter/repository").String()
+		).Default("/var/lib/opencost-exporter/repository").String()
 
 		queriesPath = kingpin.Flag(
 			"queries-dir",
 			"Path to directory with SQL queries for gathering metrics",
-		).Default("/etc/aws-cost-exporter/queries").String()
+		).Default("/etc/opencost-exporter/queries").String()
 
 		stateFilePath = kingpin.Flag(
 			"state-path",
 			"Path to store exporter state",
-		).Default("/var/lib/aws-cost-exporter/state.json").String()
+		).Default("/var/lib/opencost-exporter/state.json").String()
 
 		listenAddress = kingpin.Flag(
 			"web.listen-address",
@@ -143,14 +143,14 @@ func main() {
 
 	promlogConfig := &promlog.Config{}
 	flag.AddFlags(kingpin.CommandLine, promlogConfig)
-	kingpin.Version(version.Print("aws-cost-exporter"))
+	kingpin.Version(version.Print("opencost-exporter"))
 	kingpin.CommandLine.UsageWriter(os.Stdout)
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
 
 	logger := promlog.New(promlogConfig)
 
-	level.Info(logger).Log("msg", "Starting aws-cost-exporter", "version", version.Info())
+	level.Info(logger).Log("msg", "Starting opencost-exporter", "version", version.Info())
 	level.Info(logger).Log("msg", "Build context", "build_context", version.BuildContext())
 	if user, err := user.Current(); err == nil && user.Uid == "0" {
 		level.Warn(logger).Log("msg", "AWS Cost Exporter is running as root user. This exporter is designed to run as unpriviledged user, root is not required.")

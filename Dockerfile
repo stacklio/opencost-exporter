@@ -9,8 +9,8 @@ RUN go mod download
 
 COPY . .
 
-RUN go build -o aws-cost-exporter cmd/aws-cost-exporter/main.go 
+RUN go build -o opencost-exporter cmd/opencost-exporter/main.go 
 
 EXPOSE 9100
 
-CMD [ "/app/aws-cost-exporter" ]
+CMD [ "/app/opencost-exporter" ]

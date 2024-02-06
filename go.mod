@@ -1,4 +1,4 @@
-module github.com/st8ed/aws-cost-exporter
+module github.com/st8ed/opencost-exporter
 
 go 1.17
 

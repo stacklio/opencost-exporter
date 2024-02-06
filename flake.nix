@@ -4,10 +4,10 @@
       version = "0.3.6";
       chartVersion = "0.1.6";
       vendorSha256 = "sha256-e3AUY+qKnLEugLviQxTK1Dj6mIuo2oCu8pmjuLqrbio=";
-      dockerPackageTag = "st8ed/aws-cost-exporter:${version}";
+      dockerPackageTag = "st8ed/opencost-exporter:${version}";
 
       src = with lib; builtins.path {
-        name = "aws-cost-exporter-src";
+        name = "opencost-exporter-src";
         path = sources.cleanSourceWith rec {
           filter = name: type:
             let baseName = baseNameOf (toString name); in
@@ -22,12 +22,12 @@
       };
 
       src-chart = with lib; builtins.path {
-        name = "aws-cost-exporter-chart-src";
+        name = "opencost-exporter-chart-src";
         path = lib.cleanSource ./deployments/chart;
       };
 
       package = { go_1_17, buildGo117Module }: buildGo117Module {
-        pname = "aws-cost-exporter";
+        pname = "opencost-exporter";
         inherit version vendorSha256 src;
 
         ldflags =
@@ -45,22 +45,22 @@
           ];
 
         preInstall = ''
-          mkdir -p $out/share/aws-cost-exporter/queries
-          cp $src/configs/queries/* $out/share/aws-cost-exporter/queries/
+          mkdir -p $out/share/opencost-exporter/queries
+          cp $src/configs/queries/* $out/share/opencost-exporter/queries/
         '';
 
         meta = with lib; {
-          homepage = "https://github.com/st8ed/aws-cost-exporter";
+          homepage = "https://github.com/st8ed/opencost-exporter";
           license = licenses.asl20;
           platforms = platforms.unix;
         };
       };
 
-      dockerPackage = { pkgs, aws-cost-exporter, dockerTools, cacert, skopeo, moreutils, runCommandNoCC }:
+      dockerPackage = { pkgs, opencost-exporter, dockerTools, cacert, skopeo, moreutils, runCommandNoCC }:
         let
           # We compress image layers so the digest
           # will be reproducible when pushing to registry
-          buildCompressedImage = stream: runCommandNoCC "aws-cost-exporter-dockerImage"
+          buildCompressedImage = stream: runCommandNoCC "opencost-exporter-dockerImage"
             {
               buildInputs = [ skopeo moreutils ];
             } ''
@@ -74,28 +74,28 @@
 
         in
         buildCompressedImage (dockerTools.streamLayeredImage {
-          name = "st8ed/aws-cost-exporter";
+          name = "st8ed/opencost-exporter";
           tag = "${version}";
 
           contents = [
-            aws-cost-exporter
+            opencost-exporter
           ];
 
           fakeRootCommands = ''
             install -dm750 -o 1000 -g 1000  \
-              ./etc/aws-cost-exporter       \
-              ./var/lib/aws-cost-exporter
+              ./etc/opencost-exporter       \
+              ./var/lib/opencost-exporter
 
             cp -r \
-              ${aws-cost-exporter}/share/aws-cost-exporter/* \
-              ./etc/aws-cost-exporter
+              ${opencost-exporter}/share/opencost-exporter/* \
+              ./etc/opencost-exporter
           '';
 
           config = {
-            Entrypoint = [ "/bin/aws-cost-exporter" ];
+            Entrypoint = [ "/bin/opencost-exporter" ];
             Cmd = [ ];
             User = "1000:1000";
-            WorkingDir = "/var/lib/aws-cost-exporter";
+            WorkingDir = "/var/lib/opencost-exporter";
 
             Env = [
               "SSL_CERT_FILE=${cacert}/etc/ssl/certs/ca-bundle.crt"
@@ -106,12 +106,12 @@
             };
 
             Volumes = {
-              "/var/lib/aws-cost-exporter" = { };
+              "/var/lib/opencost-exporter" = { };
             };
           };
         });
 
-      helmChart = { pkgs, aws-cost-exporter-dockerImage, kubernetes-helm, jq, gnused }: pkgs.runCommand "aws-cost-exporter-chart-${chartVersion}.tgz"
+      helmChart = { pkgs, opencost-exporter-dockerImage, kubernetes-helm, jq, gnused }: pkgs.runCommand "opencost-exporter-chart-${chartVersion}.tgz"
         {
           src = src-chart;
           buildInputs = [ kubernetes-helm jq gnused ];
@@ -124,7 +124,7 @@
           -e 's/^appVersion: "0\.0\.0"$/appVersion: "${version}"/' \
           ./chart/Chart.yaml
 
-        digest="sha256:$(sha256sum "${aws-cost-exporter-dockerImage}/manifest.json" | cut -d' ' -f1)"
+        digest="sha256:$(sha256sum "${opencost-exporter-dockerImage}/manifest.json" | cut -d' ' -f1)"
         echo "Digest: $digest"
 
         sed -i \
@@ -149,16 +149,16 @@
     in
     {
       overlay = pkgs: _: {
-        aws-cost-exporter = pkgs.callPackage package { };
-        aws-cost-exporter-dockerImage = pkgs.callPackage dockerPackage { };
-        aws-cost-exporter-helmChart = pkgs.callPackage helmChart { };
+        opencost-exporter = pkgs.callPackage package { };
+        opencost-exporter-dockerImage = pkgs.callPackage dockerPackage { };
+        opencost-exporter-helmChart = pkgs.callPackage helmChart { };
       };
 
-      defaultPackage = forAllSystems (system: nixpkgsFor."${system}".aws-cost-exporter);
+      defaultPackage = forAllSystems (system: nixpkgsFor."${system}".opencost-exporter);
       packages = forAllSystems (system: {
-        package = nixpkgsFor."${system}".aws-cost-exporter;
-        dockerImage = nixpkgsFor."${system}".aws-cost-exporter-dockerImage;
-        helmChart = nixpkgsFor."${system}".aws-cost-exporter-helmChart;
+        package = nixpkgsFor."${system}".opencost-exporter;
+        dockerImage = nixpkgsFor."${system}".opencost-exporter-dockerImage;
+        helmChart = nixpkgsFor."${system}".opencost-exporter-helmChart;
 
         inherit src src-chart;
       });

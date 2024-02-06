@@ -3,10 +3,9 @@ package fetcher
 import (
 	"path"
 
-	"github.com/st8ed/aws-cost-exporter/pkg/state"
+	"github.com/st8ed/opencost-exporter/pkg/state"
 
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"path/filepath"
@@ -17,11 +16,9 @@ import (
 	"github.com/go-kit/log/level"
 
 	"os"
-	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
-	"github.com/aws/smithy-go"
 )
 
 type ReportManifest struct {
@@ -82,55 +79,56 @@ func GetBillingPeriods(config *state.Config, client *s3.Client) ([]state.Billing
 	}
 }
 
-func GetReportManifest(config *state.Config, client *s3.Client, period *state.BillingPeriod, lastModified *time.Time) (*ReportManifest, error) {
-	params := &s3.GetObjectInput{
-		Bucket: aws.String(config.BucketName),
-		Key: aws.String(fmt.Sprintf(
-			"/%s/%s/%s-Manifest.json",
-			config.ReportName, string(*period), config.ReportName,
-		)),
-		IfModifiedSince: aws.Time(*lastModified),
-	}
+/*
+	func GetReportManifest(config *state.Config, client *s3.Client, period *state.BillingPeriod, lastModified *time.Time) (*ReportManifest, error) {
+		params := &s3.GetObjectInput{
+			Bucket: aws.String(config.BucketName),
+			Key: aws.String(fmt.Sprintf(
+				"/%s/%s/%s-Manifest.json",
+				config.ReportName, string(*period), config.ReportName,
+			)),
+			IfModifiedSince: aws.Time(*lastModified),
+		}
 
-	obj, err := client.GetObject(context.TODO(), params)
-	if err != nil {
-		var ae smithy.APIError
+		obj, err := client.GetObject(context.TODO(), params)
+		if err != nil {
+			var ae smithy.APIError
 
-		if !errors.As(err, &ae) {
+			if !errors.As(err, &ae) {
+				return nil, err
+			}
+
+			if ae.ErrorCode() == "NotModified" {
+				return nil, nil
+			} else {
+				return nil, err
+			}
+		}
+		defer obj.Body.Close()
+
+		*lastModified = *obj.LastModified
+		manifest := &ReportManifest{}
+
+		decoder := json.NewDecoder(obj.Body)
+		if err := decoder.Decode(&manifest); err != nil {
 			return nil, err
 		}
 
-		if ae.ErrorCode() == "NotModified" {
-			return nil, nil
-		} else {
-			return nil, err
+		if manifest.ContentType != "text/csv" {
+			return nil, fmt.Errorf("report manifest contains unknown content type: %s", manifest.ContentType)
 		}
+
+		if manifest.Bucket != config.BucketName {
+			return nil, fmt.Errorf("report manifest contains unexpected bucket name: %s", manifest.Bucket)
+		}
+
+		if len(manifest.ReportKeys) == 0 {
+			return nil, fmt.Errorf("report manifest contains no report keys")
+		}
+
+		return manifest, nil
 	}
-	defer obj.Body.Close()
-
-	*lastModified = *obj.LastModified
-	manifest := &ReportManifest{}
-
-	decoder := json.NewDecoder(obj.Body)
-	if err := decoder.Decode(&manifest); err != nil {
-		return nil, err
-	}
-
-	if manifest.ContentType != "text/csv" {
-		return nil, fmt.Errorf("report manifest contains unknown content type: %s", manifest.ContentType)
-	}
-
-	if manifest.Bucket != config.BucketName {
-		return nil, fmt.Errorf("report manifest contains unexpected bucket name: %s", manifest.Bucket)
-	}
-
-	if len(manifest.ReportKeys) == 0 {
-		return nil, fmt.Errorf("report manifest contains no report keys")
-	}
-
-	return manifest, nil
-}
-
+*/
 func FetchReport(config *state.Config, client *s3.Client, period *state.BillingPeriod, logger log.Logger) error {
 	ReportFile := fmt.Sprintf("%s.csv", string(*period))
 

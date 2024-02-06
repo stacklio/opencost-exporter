@@ -1,9 +1,9 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: {{ include "aws-cost-exporter.fullname" . }}
+  name: {{ include "opencost-exporter.fullname" . }}
   labels:
-    {{- include "aws-cost-exporter.labels" . | nindent 4 }}
+    {{- include "opencost-exporter.labels" . | nindent 4 }}
 spec:
   type: {{ .Values.service.type }}
   ports:
@@ -12,4 +12,4 @@ spec:
       protocol: TCP
       name: http-metrics
   selector:
-    {{- include "aws-cost-exporter.selectorLabels" . | nindent 4 }}
+    {{- include "opencost-exporter.selectorLabels" . | nindent 4 }}

@@ -1,15 +1,15 @@
 # AWS Cost Exporter
 
-[![Build Status](https://github.com/st8ed/aws-cost-exporter/actions/workflows/build-publish.yml/badge.svg)](https://github.com/st8ed/aws-cost-exporter/actions)
-[![Go Report Card](https://goreportcard.com/badge/st8ed/aws-cost-exporter "Go Report Card")](https://goreportcard.com/report/st8ed/aws-cost-exporter)
+[![Build Status](https://github.com/st8ed/opencost-exporter/actions/workflows/build-publish.yml/badge.svg)](https://github.com/st8ed/opencost-exporter/actions)
+[![Go Report Card](https://goreportcard.com/badge/st8ed/opencost-exporter "Go Report Card")](https://goreportcard.com/report/st8ed/opencost-exporter)
 
 > An easy to use and highly customizable Prometheus exporter
 for AWS Cost and Usage Reports
 
 **Project status: *alpha***. All planned features are completed.
 
-### [Homepage](https://github.com/st8ed/aws-cost-exporter)
-### [Example](https://raw.githubusercontent.com/st8ed/aws-cost-exporter/gh-pages/assets/demo.png)
+### [Homepage](https://github.com/st8ed/opencost-exporter)
+### [Example](https://raw.githubusercontent.com/st8ed/opencost-exporter/gh-pages/assets/demo.png)
 
 ## Deployment
 
@@ -33,19 +33,19 @@ docker run --rm \
     -e AWS_ACCESS_KEY_ID \
     -e AWS_SECRET_ACCESS_KEY \
     -e AWS_REGION \
-    st8ed/aws-cost-exporter \
+    st8ed/opencost-exporter \
     --bucket $report_bucket --report $report_name
 ```
 
 Deploy with Helm (preferred):
 ```bash
-helm repo add aws-cost-exporter https://st8ed.github.io/aws-cost-exporter/
+helm repo add opencost-exporter https://st8ed.github.io/opencost-exporter/
 helm repo update
 
 # Note: prefer to use -f values.yaml because commandline arguments
 # are considered insecure (exposed systemwide)
 helm install \
-    aws-cost-exporter aws-cost-exporter/aws-cost-exporter \
+    opencost-exporter opencost-exporter/opencost-exporter \
     --set "aws.access_key_id=$AWS_ACCESS_KEY_ID" \
     --set "aws.secret_access_key=$AWS_SECRET_ACCESS_KEY" \
     --set "aws.region=$AWS_REGION" \
@@ -55,18 +55,18 @@ helm install \
 
 Deploy locally:
 ```bash
-aws-cost-exporter \
+opencost-exporter \
     --bucket $report_bucket \
     --report $report_name
 ```
 
 ## Usage
 
-Exported metrics are labelled according to [SQL query](https://github.com/st8ed/aws-cost-exporter/blob/main/configs/queries/common.sql), which itself
+Exported metrics are labelled according to [SQL query](https://github.com/st8ed/opencost-exporter/blob/main/configs/queries/common.sql), which itself
 is configurable. See [original column descriptions](https://docs.aws.amazon.com/cur/latest/userguide/data-dictionary.html) for details.
 
 ```
-usage: aws-cost-exporter --bucket=BUCKET --report=REPORT [<flags>]
+usage: opencost-exporter --bucket=BUCKET --report=REPORT [<flags>]
 
 Flags:
   -h, --help               Show context-sensitive help (also try --help-long and
@@ -74,12 +74,12 @@ Flags:
       --bucket=BUCKET      Name of the S3 bucket with detailed billing report(s)
       --report=REPORT      Name of the AWS detailed billing report in supplied
                            S3 bucket
-      --repository="/var/lib/aws-cost-exporter/repository"
+      --repository="/var/lib/opencost-exporter/repository"
                            Path to store cached AWS billing reports
-      --queries-dir="/etc/aws-cost-exporter/queries"
+      --queries-dir="/etc/opencost-exporter/queries"
                            Path to directory with SQL queries for gathering
                            metrics
-      --state-path="/var/lib/aws-cost-exporter/state.json"
+      --state-path="/var/lib/opencost-exporter/state.json"
                            Path to store exporter state
       --web.listen-address=":9100"
                            Address on which to expose metrics and web interface.

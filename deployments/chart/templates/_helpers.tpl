@@ -1,7 +1,7 @@
 {{/*
 Expand the name of the chart.
 */}}
-{{- define "aws-cost-exporter.name" -}}
+{{- define "opencost-exporter.name" -}}
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
@@ -10,7 +10,7 @@ Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
 If release name contains chart name it will be used as a full name.
 */}}
-{{- define "aws-cost-exporter.fullname" -}}
+{{- define "opencost-exporter.fullname" -}}
 {{- if .Values.fullnameOverride }}
 {{- .Values.fullnameOverride | trunc 63 | trimSuffix "-" }}
 {{- else }}
@@ -26,16 +26,16 @@ If release name contains chart name it will be used as a full name.
 {{/*
 Create chart name and version as used by the chart label.
 */}}
-{{- define "aws-cost-exporter.chart" -}}
+{{- define "opencost-exporter.chart" -}}
 {{- printf "%s-%s" .Chart.Name .Chart.Version | replace "+" "_" | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
 {{/*
 Common labels
 */}}
-{{- define "aws-cost-exporter.labels" -}}
-helm.sh/chart: {{ include "aws-cost-exporter.chart" . }}
-{{ include "aws-cost-exporter.selectorLabels" . }}
+{{- define "opencost-exporter.labels" -}}
+helm.sh/chart: {{ include "opencost-exporter.chart" . }}
+{{ include "opencost-exporter.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -45,17 +45,17 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels
 */}}
-{{- define "aws-cost-exporter.selectorLabels" -}}
-app.kubernetes.io/name: {{ include "aws-cost-exporter.name" . }}
+{{- define "opencost-exporter.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "opencost-exporter.name" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
 Create the name of the service account to use
 */}}
-{{- define "aws-cost-exporter.serviceAccountName" -}}
+{{- define "opencost-exporter.serviceAccountName" -}}
 {{- if .Values.serviceAccount.create }}
-{{- default (include "aws-cost-exporter.fullname" .) .Values.serviceAccount.name }}
+{{- default (include "opencost-exporter.fullname" .) .Values.serviceAccount.name }}
 {{- else }}
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
